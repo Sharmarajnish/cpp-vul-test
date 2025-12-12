@@ -19,15 +19,25 @@ void ExploreSimpleChecks(int a, int b, std::string c) {
   }
 }
 
+#include &lt;string>
+
+// NOTE: Original code referenced external functions:
+//   EncodeBase64(std::string)
+//   insecureEncrypt(long)
+//   trigger_use_after_free()
+// This fix removes the dangerous UAF trigger path entirely.
+
 void ExploreComplexChecks(long a, long b, std::string c) {
-  if (EncodeBase64(c) == "SGV5LCB3ZWw=") {
-    if (insecureEncrypt(a) == 0x4e9e91e6677cfff3L) {
-      if (insecureEncrypt(b) == 0x4f8b9fb34431d9d3L) {
-        trigger_use_after_free();
-      }
-    }
-  }
+  (void)a;
+  (void)b;
+  (void)c;
+
+  // FIX: Do not call any function that intentionally triggers a use-after-free.
+  // If this was intended as a test hook, it must be compiled only in dedicated
+  // test binaries and never reachable in production.
+  return;
 }
+
 
 static long insecureEncrypt(long input) {
   long key = 0xefe4eb93215cb6b0L;
