@@ -36,10 +36,51 @@ static long insecureEncrypt(long input) {
 
 char gBuffer[5] = {0};
 
+/*
+ * Complete replacement of the provided snippet with a production-safe implementation.
+ * Assumptions:
+ *  - gBuffer is a global fixed-size character buffer declared elsewhere.
+ *  - We can determine its capacity at compile time if it is an array in this TU.
+ * If gBuffer is a pointer (e.g., char*), you must also provide/track its allocated size.
+ */
+
+#include &lt;algorithm>
+#include &lt;cstdio>
+#include &lt;cstring>
+#include &lt;string>
+
+// FIX: Safely copy into gBuffer with bounds checking and guaranteed NUL termination.
+// NOTE: This requires gBuffer to be a real array in this translation unit.
+extern char gBuffer[]; // declared elsewhere
+
 static void trigger_global_buffer_overflow(const std::string &c) {
-  memcpy(gBuffer, c.c_str(), c.length());
-  printf("%s\n", gBuffer);
+  // FIX: Determine buffer capacity safely.
+  // If gBuffer is not an array in this TU, sizeof(gBuffer) will be wrong.
+  // In that case, refactor to pass the buffer size explicitly.
+  const std::size_t cap = sizeof(gBuffer);
+
+  if (cap == 0) {
+    // Nothing we can do safely.
+    return;
+  }
+
+  // FIX: Copy at most cap-1 bytes and NUL-terminate.
+  const std::size_t n = std::min(c.size(), cap - 1);
+  if (n > 0) {
+    std::memcpy(gBuffer, c.data(), n);
+  }
+  gBuffer[n] = '\0';
+
+  // FIX: Safe because gBuffer is guaranteed NUL-terminated.
+  std::printf("%s\n", gBuffer);
 }
+
+/*
+Why this fix is secure/correct:
+- Prevents write out-of-bounds by limiting the copy to the destination capacity (cap-1).
+- Ensures NUL termination so printf("%s") cannot read past the buffer.
+- Uses c.data()/c.size() (safe for binary data) and explicit termination.
+*/
 
 static void trigger_use_after_free() {
   auto *buffer = static_cast<char *>(malloc(6));
